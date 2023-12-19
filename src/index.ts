@@ -1,9 +1,6 @@
-import { ApolloServer } from '@apollo/server';
-import { startStandaloneServer } from '@apollo/server/standalone';
+import { ApolloServer } from '@apollo/server'
+import { startStandaloneServer } from '@apollo/server/standalone'
 
-// A schema is a collection of type definitions (hence "typeDefs")
-// that together define the "shape" of queries that are executed against
-// your data.
 const typeDefs = `
   type User {
     id: String!
@@ -11,8 +8,8 @@ const typeDefs = `
     lastName: String
     phoneNumber: String
     username: String!
-    created_at: DateTime!
-    updated_at: DateTime!
+    created_at: String!
+    updated_at: String!
     friendships: [Friendship!]!
   }
   
@@ -20,8 +17,8 @@ const typeDefs = `
     id: Int!
     user_id: String!
     friend_user_id: String!
-    created_at: DateTime!
-    updated_at: DateTime!
+    created_at: String!
+    updated_at: String!
     requestor: User!
     requested: User!
   }
@@ -31,53 +28,108 @@ const typeDefs = `
     user_requestor_id: String!
     user_requested_id: String!
     status: String!
-    created_at: DateTime!
-    updated_at: DateTime!
+    created_at: String!
+    updated_at: String!
     requestor: User!
     requested: User!
   }
-  
 
-  # The "Query" type is special: it lists all of the available queries that
-  # clients can execute, along with the return type for each. In this
-  # case, the "books" query returns an array of zero or more Books (defined above).
   type Query {
-    books: [Book]
+    user(id: ID!): User
+  
+    users: [User!]!
+  
+    friendRequests: [FriendRequest!]!
+  
+    friends(userId: ID!): [User!]!
   }
-`;
+  
+  type Mutation {
+    createUser(data: CreateUserInput!): User!
+    createFriendship(data: CreateFriendshipInput!): Friendship!
+    createFriendRequest(data: CreateFriendRequestInput!): FriendRequest!
+  }
 
-const books = [
-  {
-    title: 'The Awakening',
-    author: 'Kate Chopin',
-  },
-  {
-    title: 'City of Glass',
-    author: 'Paul Auster',
-  },
-];
+  input CreateUserInput {
+    firstName: String!
+    lastName: String!
+    phoneNumber: String
+    username: String!
+  }
 
-// Resolvers define how to fetch the types defined in your schema.
-// This resolver retrieves books from the "books" array above.
+  input CreateFriendshipInput {
+    user_id: ID!
+    friend_user_id: ID!
+  }
+
+  input CreateFriendRequestInput {
+    user_requestor_id: ID!
+    user_requested_id: ID!
+    status: String!
+  }
+  
+`
+
+const users = []
+const friendships = []
+const friendRequests = []
+
 const resolvers = {
-  Query: {
-    books: () => books,
-  },
-};
+	Query: {
+		user: (_, { id }: { id: string }) => {
+			const user = users.find((u) => u.id === id)
+			if (!user) {
+				throw new Error(`User with ID ${id} not found.`)
+			}
+			return user
+		},
 
-// The ApolloServer constructor requires two parameters: your schema
-// definition and your set of resolvers.
+		users: () => {
+			return users
+		},
+
+		friendRequests: () => {
+			return friendRequests
+		},
+
+		friends: (_, { userId }: { userId: string }) => {
+			const userFriends = friendships
+				.filter((friendship) => friendship.user_id === userId)
+				.map((friendship) => {
+					return users.find((user) => user.id === friendship.friend_user_id)
+				})
+
+			return userFriends || []
+		},
+	},
+	Mutation: {
+		createUser: (_, { data }) => {
+			const user = { id: users.length + 1, ...data }
+			users.push(user)
+			return user
+		},
+
+		createFriendship: (_, { data }) => {
+			const friendship = { id: friendships.length + 1, ...data }
+			friendships.push(friendship)
+			return friendship
+		},
+
+		createFriendRequest: (_, { data }) => {
+			const friendRequest = { id: friendRequests.length + 1, ...data }
+			friendRequests.push(friendRequest)
+			return friendRequest
+		},
+	},
+}
+
 const server = new ApolloServer({
-  typeDefs,
-  resolvers,
-});
+	typeDefs,
+	resolvers,
+})
 
-// Passing an ApolloServer instance to the `startStandaloneServer` function:
-//  1. creates an Express app
-//  2. installs your ApolloServer instance as middleware
-//  3. prepares your app to handle incoming requests
 const { url } = await startStandaloneServer(server, {
-  listen: { port: 4000 },
-});
+	listen: { port: 4000 },
+})
 
-console.log(`🚀  Server ready at: ${url}`);
+console.log(`🚀  Server ready at: ${url}`)
