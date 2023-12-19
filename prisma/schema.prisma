@@ -11,36 +11,34 @@ datasource db {
 }
 
 model User {
-  id           String   @id @default(auto()) 
+  id           String   @id @default(uuid()) 
   firstName    String
   lastName     String
-  phoneNumber  String?  @unique
+  phoneNumber  String  @unique
   username     String   @unique
   created_at   DateTime @default(now())
   updated_at   DateTime @updatedAt
-  friendships  Friendship[]
+//  friendships  Friendship[]
   @@map("users")
 }
 
 model Friendship {
-  id             Int      @id @default(auto()) 
+  id             String      @id @default(uuid()) 
   user_id        String   
   friend_user_id String   
   created_at     DateTime @default(now())
   updated_at     DateTime @updatedAt
-  requestor      User     @relation("Requestor", fields: [user_id], references: [id])
-  requested      User     @relation("Requested", fields: [friend_user_id], references: [id])
+  //user      User     @relation("FriendshipUser", fields: [user_id], references: [id])
+  //friend      User     @relation("FriendshipFriend", fields: [friend_user_id], references: [id])
   @@map("friendships")
 }
 
 model FriendRequest {
-  id                Int       @id @default(auto()) 
+  id                String       @id @default(uuid()) 
   user_requestor_id String    
   user_requested_id String    
   status            String    // "accepted", "pending", "rejected"
   created_at        DateTime  @default(now())
   updated_at        DateTime  @updatedAt
-  requestor         User      @relation("Requestor", fields: [user_requestor_id], references: [id])
-  requested         User      @relation("Requested", fields: [user_requested_id], references: [id])
   @@map("friend_requests")
 }
