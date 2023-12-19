@@ -1,6 +1,8 @@
 import { ApolloServer } from '@apollo/server'
 import { startStandaloneServer } from '@apollo/server/standalone'
+import { PrismaClient } from '@prisma/client'
 
+const prisma = new PrismaClient()
 const typeDefs = `
   type User {
     id: String!
@@ -14,7 +16,7 @@ const typeDefs = `
   }
   
   type Friendship {
-    id: Int!
+    id: String!
     user_id: String!
     friend_user_id: String!
     created_at: String!
@@ -24,7 +26,7 @@ const typeDefs = `
   }
   
   type FriendRequest {
-    id: Int!
+    id: String!
     user_requestor_id: String!
     user_requested_id: String!
     status: String!
@@ -32,6 +34,11 @@ const typeDefs = `
     updated_at: String!
     requestor: User!
     requested: User!
+  }
+
+  enum ResponseType {
+    ACCEPTED
+    REJECTED
   }
 
   type Query {
@@ -48,12 +55,13 @@ const typeDefs = `
     createUser(data: CreateUserInput!): User!
     createFriendship(data: CreateFriendshipInput!): Friendship!
     createFriendRequest(data: CreateFriendRequestInput!): FriendRequest!
+    responseFriendRequest(friendRequestId: String! response: ResponseType!): FriendRequest!
   }
 
   input CreateUserInput {
     firstName: String!
     lastName: String!
-    phoneNumber: String
+    phoneNumber: String!
     username: String!
   }
 
@@ -65,60 +73,179 @@ const typeDefs = `
   input CreateFriendRequestInput {
     user_requestor_id: ID!
     user_requested_id: ID!
-    status: String!
+    status: String = "PENDING"
   }
   
 `
 
-const users = []
-const friendships = []
-const friendRequests = []
-
 const resolvers = {
 	Query: {
-		user: (_, { id }: { id: string }) => {
-			const user = users.find((u) => u.id === id)
+		user: async (_, { id }: { id: string }) => {
+			const user = await prisma.user.findUnique({
+				where: {
+					id,
+				},
+			})
 			if (!user) {
 				throw new Error(`User with ID ${id} not found.`)
 			}
 			return user
 		},
 
-		users: () => {
+		users: async () => {
+			const users = await prisma.user.findMany()
 			return users
 		},
 
-		friendRequests: () => {
+		friendRequests: async () => {
+			const friendRequests = await prisma.friendRequest.findMany()
 			return friendRequests
 		},
 
-		friends: (_, { userId }: { userId: string }) => {
-			const userFriends = friendships
-				.filter((friendship) => friendship.user_id === userId)
-				.map((friendship) => {
-					return users.find((user) => user.id === friendship.friend_user_id)
+		friends: async (_, { userId }: { userId: string }) => {
+			const userFriends = await prisma.friendship.findMany({
+				where: {
+					user_id: userId,
+				},
+			})
+			return userFriends.map((friendship) => {
+				return prisma.user.findUnique({
+					where: {
+						id: friendship.friend_user_id,
+					},
 				})
-
-			return userFriends || []
+			})
 		},
 	},
 	Mutation: {
-		createUser: (_, { data }) => {
-			const user = { id: users.length + 1, ...data }
-			users.push(user)
+		createUser: async (_, { data }) => {
+			const user = await prisma.user.create({
+				data,
+			})
 			return user
 		},
 
-		createFriendship: (_, { data }) => {
-			const friendship = { id: friendships.length + 1, ...data }
-			friendships.push(friendship)
+		createFriendship: async (_, { data }) => {
+			const friendship = await prisma.friendship.create({
+				data,
+			})
 			return friendship
 		},
 
-		createFriendRequest: (_, { data }) => {
-			const friendRequest = { id: friendRequests.length + 1, ...data }
-			friendRequests.push(friendRequest)
+		createFriendRequest: async (_, { data }) => {
+			const userRequestor = await prisma.user.findUnique({
+				where: {
+					id: data.user_requestor_id,
+          
+				},
+			})
+
+			const userRequested = await prisma.user.findUnique({
+				where: {
+					id: data.user_requested_id,
+				},
+			})
+
+			if (!userRequestor || !userRequested) {
+				throw new Error('One or both users do not exist.')
+			}
+
+			const existingRequest = await prisma.friendRequest.findFirst({
+				where: {
+					OR: [
+						{ user_requestor_id: data.user_requestor_id, user_requested_id: data.user_requested_id },
+						{ user_requested_id: data.user_requestor_id, user_requestor_id: data.user_requested_id },
+					],
+				},
+			})
+
+			if (existingRequest) {
+				throw new Error('A friend request already exists between these users.')
+			}
+
+			const existingFriendship = await prisma.friendship.findFirst({
+				where: {
+					OR: [
+						{
+							user_id: data.user_requestor_id,
+							friend_user_id: data.user_requested_id,
+						},
+						{
+							user_id: data.user_requested_id,
+							friend_user_id: data.user_requestor_id,
+						},
+					],
+				},
+			})
+
+			if (existingFriendship) {
+				throw new Error('Users are already friends.')
+			}
+
+			const friendRequest = await prisma.friendRequest.create({
+				data,
+			})
+
 			return friendRequest
+		},
+
+		responseFriendRequest: async (_, { friendRequestId, response }) => {
+			const friendRequest = await prisma.friendRequest.findUnique({
+				where: {
+					id: friendRequestId,
+				},
+			})
+
+			if (!friendRequest) {
+				throw new Error('Friend request not found.')
+			}
+
+			if (friendRequest.status === 'ACCEPTED' || friendRequest.status === 'REJECTED') {
+				throw new Error('Friend request has already been responded to.')
+			}
+
+			if (response === 'ACCEPTED') {
+				await prisma.friendRequest.update({
+					where: {
+						id: friendRequestId,
+					},
+					data: {
+						status: 'ACCEPTED',
+					},
+				})
+
+				await prisma.friendship.createMany({
+					data: [
+						{
+							user_id: friendRequest.user_requestor_id,
+							friend_user_id: friendRequest.user_requested_id,
+						},
+						{
+							user_id: friendRequest.user_requested_id,
+							friend_user_id: friendRequest.user_requestor_id,
+						},
+					],
+				})
+			} else if (response === 'REJECTED') {
+				await prisma.friendRequest.update({
+					where: {
+						id: friendRequestId,
+					},
+					data: {
+						status: 'REJECTED',
+					},
+				})
+			} else {
+				throw new Error("Invalid response parameter. It must be 'ACCEPTED' or 'REJECTED'.")
+			}
+
+			const updatedFriendRequest = await prisma.friendRequest.findUnique({
+				where: {
+					id: friendRequestId,
+				},
+			})
+
+			return updatedFriendRequest
 		},
 	},
 }
