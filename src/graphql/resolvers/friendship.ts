@@ -1,26 +1,24 @@
-import { PrismaClient } from '@prisma/client'
+import { Friendship, Prisma, PrismaClient } from '@prisma/client'
 
 const prisma = new PrismaClient()
 
+type CreateFriendshipArgs = {
+	data: Prisma.FriendshipCreateInput
+}
+
 const friendshipResolvers = {
 	Query: {
-		friends: async (_, { userId }: { userId: string }) => {
+		friends: async (__: any, { userId }: { userId: string }): Promise<Friendship[]> => {
 			const userFriends = await prisma.friendship.findMany({
 				where: {
 					user_id: userId,
 				},
 			})
-			return userFriends.map((friendship) => {
-				return prisma.user.findUnique({
-					where: {
-						id: friendship.friend_user_id,
-					},
-				})
-			})
+			return userFriends
 		},
 	},
 	Mutation: {
-		createFriendship: async (_, { data }) => {
+		createFriendship: async (__: any, { data }: CreateFriendshipArgs): Promise<Friendship> => {
 			const friendship = await prisma.friendship.create({
 				data,
 			})

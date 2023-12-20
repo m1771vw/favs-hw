@@ -1,10 +1,14 @@
-import { PrismaClient } from '@prisma/client';
+import { Prisma, PrismaClient, User } from '@prisma/client'
 
-const prisma = new PrismaClient();
+const prisma = new PrismaClient()
+
+type CreateUserArgs = {
+	data: Prisma.UserCreateInput
+}
 
 const userResolvers = {
-  Query: {
-    user: async (_, { id }: { id: string }) => {
+	Query: {
+		user: async (_: any, { id }: { id: string }): Promise<User> => {
 			const user = await prisma.user.findUnique({
 				where: {
 					id,
@@ -16,19 +20,19 @@ const userResolvers = {
 			return user
 		},
 
-		users: async () => {
+		users: async (): Promise<User[]> => {
 			const users = await prisma.user.findMany()
 			return users
 		},
-  },
-  Mutation: {
-    createUser: async (_, { data }) => {
+	},
+	Mutation: {
+		createUser: async (__: any, { data }: CreateUserArgs): Promise<User> => {
 			const user = await prisma.user.create({
 				data,
 			})
 			return user
 		},
-  },
-};
+	},
+}
 
-export default userResolvers;
+export default userResolvers

@@ -1,13 +1,27 @@
 import { ApolloServer } from '@apollo/server'
 import { startStandaloneServer } from '@apollo/server/standalone'
-import { PrismaClient } from '@prisma/client'
+import { FriendRequest, Friendship, Prisma, PrismaClient, User } from '@prisma/client'
 // import schema from './graphql/schema'
 // import userResolvers from 'graphql/resolvers/user'
 // import friendshipResolvers from 'graphql/resolvers/friendship'
 // import friendRequestResolvers from 'graphql/resolvers/friendRequest'
 // import resolvers from './graphql/resolvers'
 // const resolvers = [userResolvers, friendshipResolvers, friendRequestResolvers]
+
 const prisma = new PrismaClient()
+
+type CreateUserArgs = {
+	data: Prisma.UserCreateInput
+}
+
+type CreateFriendshipArgs = {
+	data: Prisma.FriendshipCreateInput
+}
+
+type CreateFriendRequestArgs = {
+	data: Prisma.FriendRequestCreateInput
+}
+
 const schema = `
 type User {
   id: String!
@@ -83,9 +97,14 @@ input CreateFriendRequestInput {
 
 `
 
+type FriendRequestResponse = {
+	friendRequestId: string
+	response: 'ACCEPTED' | 'REJECTED'
+}
+
 const resolvers = {
 	Query: {
-		user: async (_, { id }: { id: string }) => {
+		user: async (_: any, { id }: { id: string }): Promise<User> => {
 			const user = await prisma.user.findUnique({
 				where: {
 					id,
@@ -97,47 +116,42 @@ const resolvers = {
 			return user
 		},
 
-		users: async () => {
+		users: async (): Promise<User[]> => {
 			const users = await prisma.user.findMany()
 			return users
 		},
 
-		friendRequests: async () => {
+		friendRequests: async (): Promise<FriendRequest[]> => {
 			const friendRequests = await prisma.friendRequest.findMany()
 			return friendRequests
 		},
 
-		friends: async (_, { userId }: { userId: string }) => {
+		friends: async (__: any, { userId }: { userId: string }): Promise<Friendship[]> => {
 			const userFriends = await prisma.friendship.findMany({
 				where: {
 					user_id: userId,
 				},
 			})
-			return userFriends.map((friendship) => {
-				return prisma.user.findUnique({
-					where: {
-						id: friendship.friend_user_id,
-					},
-				})
-			})
+			return userFriends
 		},
 	},
+
 	Mutation: {
-		createUser: async (_, { data }) => {
+		createUser: async (__: any, { data }: CreateUserArgs): Promise<User> => {
 			const user = await prisma.user.create({
 				data,
 			})
 			return user
 		},
 
-		createFriendship: async (_, { data }) => {
+		createFriendship: async (__: any, { data }: CreateFriendshipArgs): Promise<Friendship> => {
 			const friendship = await prisma.friendship.create({
 				data,
 			})
 			return friendship
 		},
 
-		createFriendRequest: async (_, { data }) => {
+		createFriendRequest: async (__: any, { data }: CreateFriendRequestArgs): Promise<FriendRequest> => {
 			const userRequestor = await prisma.user.findUnique({
 				where: {
 					id: data.user_requestor_id,
@@ -193,7 +207,10 @@ const resolvers = {
 			return friendRequest
 		},
 
-		responseFriendRequest: async (_, { friendRequestId, response }) => {
+		responseFriendRequest: async (
+			_: any,
+			{ friendRequestId, response }: FriendRequestResponse
+		): Promise<FriendRequest | null> => {
 			const friendRequest = await prisma.friendRequest.findUnique({
 				where: {
 					id: friendRequestId,

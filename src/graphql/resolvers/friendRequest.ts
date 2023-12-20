@@ -1,16 +1,25 @@
-import { PrismaClient } from '@prisma/client'
+import { FriendRequest, Prisma, PrismaClient } from '@prisma/client'
 
 const prisma = new PrismaClient()
 
+type FriendRequestResponse = {
+	friendRequestId: string
+	response: 'ACCEPTED' | 'REJECTED'
+}
+
+type CreateFriendRequestArgs = {
+	data: Prisma.FriendRequestCreateInput
+}
+
 const friendRequestResolvers = {
 	Query: {
-		friendRequests: async () => {
+		friendRequests: async (): Promise<FriendRequest[]> => {
 			const friendRequests = await prisma.friendRequest.findMany()
 			return friendRequests
 		},
 	},
 	Mutation: {
-		createFriendRequest: async (_, { data }) => {
+		createFriendRequest: async (__: any, { data }: CreateFriendRequestArgs): Promise<FriendRequest> => {
 			const userRequestor = await prisma.user.findUnique({
 				where: {
 					id: data.user_requestor_id,
@@ -66,7 +75,10 @@ const friendRequestResolvers = {
 			return friendRequest
 		},
 
-		responseFriendRequest: async (_, { friendRequestId, response }) => {
+		responseFriendRequest: async (
+			_: any,
+			{ friendRequestId, response }: FriendRequestResponse
+		): Promise<FriendRequest | null> => {
 			const friendRequest = await prisma.friendRequest.findUnique({
 				where: {
 					id: friendRequestId,
