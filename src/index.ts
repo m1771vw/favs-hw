@@ -1,81 +1,86 @@
 import { ApolloServer } from '@apollo/server'
 import { startStandaloneServer } from '@apollo/server/standalone'
 import { PrismaClient } from '@prisma/client'
-
+// import schema from './graphql/schema'
+// import userResolvers from 'graphql/resolvers/user'
+// import friendshipResolvers from 'graphql/resolvers/friendship'
+// import friendRequestResolvers from 'graphql/resolvers/friendRequest'
+// import resolvers from './graphql/resolvers'
+// const resolvers = [userResolvers, friendshipResolvers, friendRequestResolvers]
 const prisma = new PrismaClient()
-const typeDefs = `
-  type User {
-    id: String!
-    firstName: String
-    lastName: String
-    phoneNumber: String
-    username: String!
-    created_at: String!
-    updated_at: String!
-    friendships: [Friendship!]!
-  }
-  
-  type Friendship {
-    id: String!
-    user_id: String!
-    friend_user_id: String!
-    created_at: String!
-    updated_at: String!
-    requestor: User!
-    requested: User!
-  }
-  
-  type FriendRequest {
-    id: String!
-    user_requestor_id: String!
-    user_requested_id: String!
-    status: String!
-    created_at: String!
-    updated_at: String!
-    requestor: User!
-    requested: User!
-  }
+const schema = `
+type User {
+  id: String!
+  firstName: String
+  lastName: String
+  phoneNumber: String
+  username: String!
+  created_at: String!
+  updated_at: String!
+  friendships: [Friendship!]!
+}
 
-  enum ResponseType {
-    ACCEPTED
-    REJECTED
-  }
+type Friendship {
+  id: String!
+  user_id: String!
+  friend_user_id: String!
+  created_at: String!
+  updated_at: String!
+  requestor: User!
+  requested: User!
+}
 
-  type Query {
-    user(id: ID!): User
-  
-    users: [User!]!
-  
-    friendRequests: [FriendRequest!]!
-  
-    friends(userId: ID!): [User!]!
-  }
-  
-  type Mutation {
-    createUser(data: CreateUserInput!): User!
-    createFriendship(data: CreateFriendshipInput!): Friendship!
-    createFriendRequest(data: CreateFriendRequestInput!): FriendRequest!
-    responseFriendRequest(friendRequestId: String! response: ResponseType!): FriendRequest!
-  }
+type FriendRequest {
+  id: String!
+  user_requestor_id: String!
+  user_requested_id: String!
+  status: String!
+  created_at: String!
+  updated_at: String!
+  requestor: User!
+  requested: User!
+}
 
-  input CreateUserInput {
-    firstName: String!
-    lastName: String!
-    phoneNumber: String!
-    username: String!
-  }
+enum ResponseType {
+  ACCEPTED
+  REJECTED
+}
 
-  input CreateFriendshipInput {
-    user_id: ID!
-    friend_user_id: ID!
-  }
+type Query {
+  user(id: ID!): User
 
-  input CreateFriendRequestInput {
-    user_requestor_id: ID!
-    user_requested_id: ID!
-    status: String = "PENDING"
-  }
-  
+  users: [User!]!
+
+  friendRequests: [FriendRequest!]!
+
+  friends(userId: ID!): [User!]!
+}
+
+type Mutation {
+  createUser(data: CreateUserInput!): User!
+  createFriendship(data: CreateFriendshipInput!): Friendship!
+  createFriendRequest(data: CreateFriendRequestInput!): FriendRequest!
+  responseFriendRequest(friendRequestId: String! response: ResponseType!): FriendRequest!
+}
+
+input CreateUserInput {
+  firstName: String!
+  lastName: String!
+  phoneNumber: String!
+  username: String!
+}
+
+input CreateFriendshipInput {
+  user_id: ID!
+  friend_user_id: ID!
+}
+
+input CreateFriendRequestInput {
+  user_requestor_id: ID!
+  user_requested_id: ID!
+  status: String = "PENDING"
+}
+
 `
 
 const resolvers = {
@@ -136,7 +141,6 @@ const resolvers = {
 			const userRequestor = await prisma.user.findUnique({
 				where: {
 					id: data.user_requestor_id,
-          
 				},
 			})
 
@@ -250,13 +254,19 @@ const resolvers = {
 	},
 }
 
-const server = new ApolloServer({
-	typeDefs,
-	resolvers,
-})
+async function runServer() {
+	const server = new ApolloServer({
+		typeDefs: schema,
+		resolvers,
+	})
 
-const { url } = await startStandaloneServer(server, {
-	listen: { port: 4000 },
-})
+	const { url } = await startStandaloneServer(server, {
+		listen: { port: 4000 },
+	})
 
-console.log(`🚀  Server ready at: ${url}`)
+	console.log(`🚀  Server ready at: ${url}`)
+}
+
+runServer().catch((error) => {
+	console.error('Error starting the server:', error)
+})
