@@ -83,3 +83,48 @@ mutation {
     updated_at
   }
 }`
+
+
+const retrieveAllUsers = 
+`
+uery {
+  users {
+    id
+    firstName
+    lastName
+    phoneNumber
+    username
+    created_at
+    updated_at
+  }
+}
+`
+
+const singleUserDetail =
+`
+user(id: "<user_id>") {
+  id
+  firstName
+  lastName
+  phoneNumber
+  username
+  created_at
+  updated_at
+}
+}
+`
+
+const checkFriendshipp = 
+`
+query {
+  friends(userId: "<input user id here>") {
+    id
+    firstName
+    lastName
+    phoneNumber
+    username
+    created_at
+    updated_at
+  }
+}
+`

@@ -126,13 +126,19 @@ const resolvers = {
 			return friendRequests
 		},
 
-		friends: async (__: any, { userId }: { userId: string }): Promise<Friendship[]> => {
+		friends: async (__: any, { userId }: { userId: string }): Promise<any> => {
 			const userFriends = await prisma.friendship.findMany({
 				where: {
 					user_id: userId,
 				},
 			})
-			return userFriends
+			return userFriends.map((friendship) => {
+				return prisma.user.findUnique({
+					where: {
+						id: friendship.friend_user_id,
+					},
+				})
+			})
 		},
 	},
 
@@ -281,7 +287,7 @@ async function runServer() {
 		listen: { port: 3003 },
 	})
 
-	console.log(`🚀  Server ready at: ${url}!`)
+	console.log(`🚀  Server ready at: ${url}`)
 }
 
 runServer().catch((error) => {

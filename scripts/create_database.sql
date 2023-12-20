@@ -1,9 +1,17 @@
 CREATE DATABASE favsdb;
 
-\c favsdb
+-- \c favsdb
 
-CREATE USER favs_user WITH PASSWORD 'favs_password';
+-- CREATE USER favs_user WITH PASSWORD 'favs_password';
 
-GRANT ALL PRIVILEGES ON DATABASE favsdb TO favs_user;
+-- ALTER USER favs_user CREATEDB;
+
+-- -- GRANT ALL PRIVILEGES ON DATABASE favsdb TO favs_user;
+-- GRANT CREATE ON DATABASE favsdb TO favs_user;
+
+-- GRANT ALL
+-- ON ALL TABLES
+-- IN SCHEMA "public"
+-- TO favs_user;
 
 \q
