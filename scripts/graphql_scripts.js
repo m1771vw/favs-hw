@@ -68,18 +68,6 @@ mutation {
   }
 }
 
-mutation {
-  createFriendRequest(data: {
-    user_requestor_id: "User2Id",
-    user_requested_id: "User1Id",
-    status: "pending"
-  }) {
-    id
-    user_requestor_id
-    user_requested_id
-    status
-  }
-}
 `
 const responseFriendRequest = `
 mutation {
