@@ -1,30 +1,30 @@
 const generateUsers = `
 mutation {
   createUser(data: {
-    firstName: "User1FirstName",
-    lastName: "User1LastName",
-    phoneNumber: "1234567890",  
+    first_name: "User1FirstName",
+    last_name: "User1LastName",
+    phone_number: "1234567890",  
     username: "user1"
   }) {
     id
-    firstName
-    lastName
-    phoneNumber
+    first_name
+    last_name
+    phone_number
     username
   }
 }
 
 mutation {
   createUser(data: {
-    firstName: "User2FirstName",
-    lastName: "User2LastName",
-    phoneNumber: "9876543210",
+    first_name: "User2FirstName",
+    last_name: "User2LastName",
+    phone_number: "9876543210",
     username: "user2"
   }) {
     id
-    firstName
-    lastName
-    phoneNumber
+    first_name
+    last_name
+    phone_number
     username
   }
 }
@@ -90,9 +90,9 @@ const retrieveAllUsers =
 uery {
   users {
     id
-    firstName
-    lastName
-    phoneNumber
+    first_name
+    last_name
+    phone_number
     username
     created_at
     updated_at
@@ -104,9 +104,9 @@ const singleUserDetail =
 `
 user(id: "<user_id>") {
   id
-  firstName
-  lastName
-  phoneNumber
+  first_name
+  last_name
+  phone_number
   username
   created_at
   updated_at
@@ -119,9 +119,9 @@ const checkFriendshipp =
 query {
   friends(userId: "<input user id here>") {
     id
-    firstName
-    lastName
-    phoneNumber
+    first_name
+    last_name
+    phone_number
     username
     created_at
     updated_at

@@ -14,9 +14,9 @@ datasource db {
 
 model User {
   id           String   @id @default(uuid()) 
-  firstName    String
-  lastName     String
-  phoneNumber  String  @unique
+  first_name    String
+  last_name     String
+  phone_number  String  @unique
   username     String   @unique
   created_at   DateTime @default(now())
   updated_at   DateTime @updatedAt

@@ -25,9 +25,9 @@ type CreateFriendRequestArgs = {
 const schema = `
 type User {
   id: String!
-  firstName: String
-  lastName: String
-  phoneNumber: String
+  first_name: String
+  last_name: String
+  phone_number: String
   username: String!
   created_at: String!
   updated_at: String!
@@ -78,9 +78,9 @@ type Mutation {
 }
 
 input CreateUserInput {
-  firstName: String!
-  lastName: String!
-  phoneNumber: String!
+  first_name: String!
+  last_name: String!
+  phone_number: String!
   username: String!
 }
 
